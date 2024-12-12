@@ -23,6 +23,7 @@ import { MetricsService } from './infrastructure/services/metrics.service';
 import { CircuitBreakerService } from './infrastructure/services/circuit-breaker.service';
 import { RequestContextService } from './infrastructure/services/request-context.service';
 import { ServicesModule } from './infrastructure/services/services.module';
+import { HealthModule } from './infrastructure/health/health.module';
 
 @Module({
   imports: [
@@ -51,6 +52,7 @@ import { ServicesModule } from './infrastructure/services/services.module';
       ],
       inject: [ConfigService],
     }),
+    HealthModule,
   ],
   providers: [
     ...repositoryProviders,
