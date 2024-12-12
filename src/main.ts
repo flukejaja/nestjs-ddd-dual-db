@@ -40,14 +40,12 @@ async function bootstrap() {
 
   setupSwagger(app);
 
-  // Add global exception filter
   const logger = app.get(CustomLoggerService);
   app.useGlobalFilters(new GlobalExceptionFilter(logger));
   app.enableCors(getSecurityConfig(app.get(ConfigService)).cors);
 
   await app.listen(3000, '0.0.0.0');
 
-  // Log health check endpoint
   console.log(`Health check available at: ${await app.getUrl()}/health`);
   console.log(`Metrics available at: ${await app.getUrl()}/metrics`);
   console.log(`Swagger available at: ${await app.getUrl()}/api`);

@@ -23,6 +23,7 @@
   "dependencies": {
     "@fastify/compress": "^8.0.1",
     "@fastify/helmet": "^13.0.0",
+    "@nestjs/axios": "^3.1.3",
     "@nestjs/cache-manager": "^2.3.0",
     "@nestjs/common": "^10.0.0",
     "@nestjs/config": "^3.3.0",
@@ -38,6 +39,7 @@
     "@nestjs/terminus": "^10.0.1",
     "@nestjs/throttler": "^5.0.0",
     "@nestjs/typeorm": "^10.0.2",
+    "@nestjs/websockets": "^10.4.15",
     "amqp-connection-manager": "^4.1.14",
     "amqplib": "^0.10.3",
     "axios": "^1.7.9",
@@ -54,6 +56,7 @@
     "reflect-metadata": "^0.2.0",
     "rimraf": "^6.0.1",
     "rxjs": "^7.8.1",
+    "socket.io": "^4.8.1",
     "sqlstring": "^2.3.3",
     "swagger-ui-express": "^5.0.0",
     "typeorm": "^0.3.20",

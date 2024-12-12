@@ -12,7 +12,7 @@ import {
   AUTH_SERVICE,
 } from './providers';
 import { ThrottlerModule } from '@nestjs/throttler';
-import { SecurityHeadersMiddleware } from './infrastructure/middleware/security-headers.middleware';
+import { EnhancedSecurityHeadersMiddleware } from './infrastructure/middleware/security-headers.middleware';
 import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { AdvancedRateLimitGuard } from './infrastructure/guards/advanced-rate-limit.guard';
 import { EnhancedJwtAuthGuard } from './infrastructure/guards/enhanced-jwt-auth.guard';
@@ -24,6 +24,15 @@ import { CircuitBreakerService } from './infrastructure/services/circuit-breaker
 import { RequestContextService } from './infrastructure/services/request-context.service';
 import { ServicesModule } from './infrastructure/services/services.module';
 import { HealthModule } from './infrastructure/health/health.module';
+import { SessionService } from './infrastructure/services/session.service';
+import { SessionGuard } from './infrastructure/guards/session.guard';
+import { SessionGateway } from './infrastructure/gateways/session.gateway';
+import {
+  SESSION_CONFIG,
+  defaultSessionConfig,
+} from './infrastructure/config/session.config';
+import { AuthThrottlerGuard } from './infrastructure/guards/auth-throttler.guard';
+import { getThrottlerConfig } from './infrastructure/config/throttler.config';
 
 @Module({
   imports: [
@@ -44,12 +53,7 @@ import { HealthModule } from './infrastructure/health/health.module';
     EventBusModule,
     ThrottlerModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => [
-        {
-          ttl: configService.get('THROTTLE_TTL', 60), // Time window (seconds)
-          limit: configService.get('THROTTLE_LIMIT', 10), // Max requests per TTL
-        },
-      ],
+      useFactory: getThrottlerConfig,
       inject: [ConfigService],
     }),
     HealthModule,
@@ -74,13 +78,27 @@ import { HealthModule } from './infrastructure/health/health.module';
       provide: APP_INTERCEPTOR,
       useClass: MetricsInterceptor,
     },
+    SessionService,
+    {
+      provide: APP_GUARD,
+      useClass: SessionGuard,
+    },
+    SessionGateway,
+    {
+      provide: SESSION_CONFIG,
+      useValue: defaultSessionConfig,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: AuthThrottlerGuard,
+    },
   ],
   exports: [USER_SERVICE, AUTH_SERVICE],
 })
 export class AppModule {
   configure(consumer: MiddlewareConsumer) {
     consumer
-      .apply(SecurityHeadersMiddleware)
+      .apply(EnhancedSecurityHeadersMiddleware)
       .forRoutes({ path: '*', method: RequestMethod.ALL });
     consumer.apply(RequestTrackingMiddleware).forRoutes('*');
   }
