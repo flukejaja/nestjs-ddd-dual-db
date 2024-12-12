@@ -11,6 +11,8 @@ import {
   USER_SERVICE,
   AUTH_SERVICE,
 } from './providers';
+import { ThrottlerModule } from '@nestjs/throttler';
+
 @Module({
   imports: [
     ConfigModule.forRoot(),
@@ -27,6 +29,16 @@ import {
     }),
     CacheModule.register(),
     EventBusModule,
+    ThrottlerModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: (configService: ConfigService) => [
+        {
+          ttl: configService.get('THROTTLE_TTL', 60), // Time window (seconds)
+          limit: configService.get('THROTTLE_LIMIT', 10), // Max requests per TTL
+        },
+      ],
+      inject: [ConfigService],
+    }),
   ],
   providers: [...repositoryProviders, ...serviceProviders, ...coreProviders],
   exports: [USER_SERVICE, AUTH_SERVICE],

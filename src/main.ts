@@ -1,6 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { ValidationPipe } from '@nestjs/common';
+import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { setupSwagger } from './infrastructure/config/swagger.config';
 import {
   FastifyAdapter,
@@ -8,6 +8,7 @@ import {
 } from '@nestjs/platform-fastify';
 import fastifyHelmet from '@fastify/helmet';
 import fastifyCompress from '@fastify/compress';
+import { TransformInterceptor } from './infrastructure/interceptors/transform.interceptor';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(
@@ -28,6 +29,12 @@ async function bootstrap() {
 
   await app.register(fastifyCompress);
 
+  app.enableVersioning({
+    type: VersioningType.URI,
+    prefix: 'v',
+    defaultVersion: '1',
+  });
+
   app.useGlobalPipes(
     new ValidationPipe({
       transform: true,
@@ -35,6 +42,8 @@ async function bootstrap() {
       forbidNonWhitelisted: true,
     }),
   );
+
+  app.useGlobalInterceptors(new TransformInterceptor());
 
   setupSwagger(app);
 

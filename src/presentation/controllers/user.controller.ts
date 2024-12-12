@@ -9,12 +9,14 @@ import {
 import { UserService } from '@domain/services/user.service';
 import { CreateUserDto } from '@application/dtos/create-user.dto';
 import { JwtAuthGuard } from '@infrastructure/guards/jwt-auth.guard';
+import { Throttle, SkipThrottle } from '@nestjs/throttler';
 
 @ApiTags('users')
 @Controller('users')
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
+  @Throttle({ default: { ttl: 30, limit: 3 } })
   @Post()
   @ApiOperation({ summary: 'Create a new user' })
   @ApiResponse({
@@ -26,6 +28,7 @@ export class UserController {
     return this.userService.create(createUserDto);
   }
 
+  @SkipThrottle()
   @Get(':id')
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
