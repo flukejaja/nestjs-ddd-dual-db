@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, MiddlewareConsumer, RequestMethod } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { CacheModule } from '@nestjs/cache-manager';
@@ -12,6 +12,10 @@ import {
   AUTH_SERVICE,
 } from './providers';
 import { ThrottlerModule } from '@nestjs/throttler';
+import { SecurityHeadersMiddleware } from './infrastructure/middleware/security-headers.middleware';
+import { APP_GUARD } from '@nestjs/core';
+import { AdvancedRateLimitGuard } from './infrastructure/guards/advanced-rate-limit.guard';
+import { EnhancedJwtAuthGuard } from './infrastructure/guards/enhanced-jwt-auth.guard';
 
 @Module({
   imports: [
@@ -40,7 +44,25 @@ import { ThrottlerModule } from '@nestjs/throttler';
       inject: [ConfigService],
     }),
   ],
-  providers: [...repositoryProviders, ...serviceProviders, ...coreProviders],
+  providers: [
+    ...repositoryProviders,
+    ...serviceProviders,
+    ...coreProviders,
+    {
+      provide: APP_GUARD,
+      useClass: AdvancedRateLimitGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: EnhancedJwtAuthGuard,
+    },
+  ],
   exports: [USER_SERVICE, AUTH_SERVICE],
 })
-export class AppModule {}
+export class AppModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer
+      .apply(SecurityHeadersMiddleware)
+      .forRoutes({ path: '*', method: RequestMethod.ALL });
+  }
+}

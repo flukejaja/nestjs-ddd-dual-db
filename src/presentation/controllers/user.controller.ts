@@ -1,4 +1,13 @@
-import { Controller, Get, Post, Body, Param, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  UseGuards,
+  UseInterceptors,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -10,7 +19,9 @@ import { UserService } from '@domain/services/user.service';
 import { CreateUserDto } from '@application/dtos/create-user.dto';
 import { JwtAuthGuard } from '@infrastructure/guards/jwt-auth.guard';
 import { Throttle, SkipThrottle } from '@nestjs/throttler';
-
+import { TimeoutInterceptor } from '@infrastructure/interceptors/timeout.interceptor';
+import { ApiResponseWrapper } from '@/infrastructure/decorators/api-response.decorator';
+import { Transaction } from '@/infrastructure/decorators/transaction.decorator';
 @ApiTags('users')
 @Controller('users')
 export class UserController {
@@ -19,13 +30,19 @@ export class UserController {
   @Throttle({ default: { ttl: 30, limit: 3 } })
   @Post()
   @ApiOperation({ summary: 'Create a new user' })
-  @ApiResponse({
+  @ApiResponseWrapper({
     status: 201,
-    description: 'The user has been successfully created.',
+    description: 'User created successfully',
+    schema: CreateUserDto,
   })
   @ApiResponse({ status: 400, description: 'Bad Request.' })
-  async createUser(@Body() createUserDto: CreateUserDto) {
-    return this.userService.create(createUserDto);
+  @UseInterceptors(TimeoutInterceptor)
+  async createUser(@Transaction() @Body() createUserDto: CreateUserDto) {
+    try {
+      return await this.userService.create(createUserDto);
+    } catch (error) {
+      throw new InternalServerErrorException(error);
+    }
   }
 
   @SkipThrottle()

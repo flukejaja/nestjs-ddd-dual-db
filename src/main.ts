@@ -1,6 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { ValidationPipe, VersioningType } from '@nestjs/common';
+import { VersioningType } from '@nestjs/common';
 import { setupSwagger } from './infrastructure/config/swagger.config';
 import {
   FastifyAdapter,
@@ -9,6 +9,7 @@ import {
 import fastifyHelmet from '@fastify/helmet';
 import fastifyCompress from '@fastify/compress';
 import { TransformInterceptor } from './infrastructure/interceptors/transform.interceptor';
+import { CustomValidationPipe } from './infrastructure/pipes/validation.pipe';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(
@@ -35,13 +36,7 @@ async function bootstrap() {
     defaultVersion: '1',
   });
 
-  app.useGlobalPipes(
-    new ValidationPipe({
-      transform: true,
-      whitelist: true,
-      forbidNonWhitelisted: true,
-    }),
-  );
+  app.useGlobalPipes(new CustomValidationPipe());
 
   app.useGlobalInterceptors(new TransformInterceptor());
 
