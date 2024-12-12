@@ -1,23 +1,31 @@
 import { Injectable, Scope } from '@nestjs/common';
-import { FastifyRequest } from 'fastify';
+import { AsyncLocalStorage } from 'async_hooks';
 
 @Injectable({ scope: Scope.REQUEST })
 export class RequestContextService {
-  private request: FastifyRequest;
+  private static asyncLocalStorage = new AsyncLocalStorage<Map<string, any>>();
 
-  setRequest(request: FastifyRequest) {
-    this.request = request;
+  static getStore() {
+    return this.asyncLocalStorage.getStore() || new Map();
   }
 
-  getUser() {
-    return this.request.user;
+  static run(callback: () => void) {
+    return this.asyncLocalStorage.run(new Map(), callback);
   }
 
-  getRequestId() {
-    return this.request.headers['x-request-id'];
+  getRequestId(): string {
+    return RequestContextService.getStore().get('requestId');
   }
 
-  getClientIp() {
-    return this.request.ip;
+  getUser(): any {
+    return RequestContextService.getStore().get('user');
+  }
+
+  getClientIp(): string {
+    return RequestContextService.getStore().get('clientIp');
+  }
+
+  set(key: string, value: any): void {
+    RequestContextService.getStore().set(key, value);
   }
 }

@@ -13,14 +13,22 @@ import {
 } from './providers';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { SecurityHeadersMiddleware } from './infrastructure/middleware/security-headers.middleware';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { AdvancedRateLimitGuard } from './infrastructure/guards/advanced-rate-limit.guard';
 import { EnhancedJwtAuthGuard } from './infrastructure/guards/enhanced-jwt-auth.guard';
+import { MetricsInterceptor } from './infrastructure/interceptors/metrics.interceptor';
+import { RequestTrackingMiddleware } from './infrastructure/middleware/request-tracking.middleware';
+import { CustomLoggerService } from './infrastructure/services/custom-logger.service';
+import { MetricsService } from './infrastructure/services/metrics.service';
+import { CircuitBreakerService } from './infrastructure/services/circuit-breaker.service';
+import { RequestContextService } from './infrastructure/services/request-context.service';
+import { ServicesModule } from './infrastructure/services/services.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot(),
     DatabaseModule,
+    ServicesModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
@@ -56,6 +64,14 @@ import { EnhancedJwtAuthGuard } from './infrastructure/guards/enhanced-jwt-auth.
       provide: APP_GUARD,
       useClass: EnhancedJwtAuthGuard,
     },
+    RequestContextService,
+    CustomLoggerService,
+    MetricsService,
+    CircuitBreakerService,
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: MetricsInterceptor,
+    },
   ],
   exports: [USER_SERVICE, AUTH_SERVICE],
 })
@@ -64,5 +80,6 @@ export class AppModule {
     consumer
       .apply(SecurityHeadersMiddleware)
       .forRoutes({ path: '*', method: RequestMethod.ALL });
+    consumer.apply(RequestTrackingMiddleware).forRoutes('*');
   }
 }
